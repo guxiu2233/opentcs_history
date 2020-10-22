@@ -11,24 +11,20 @@ buildscript {
     classpath 'org.asciidoctor:asciidoctorj-pdf:1.5.0-alpha.11'
     classpath 'org.asciidoctor:asciidoctorj-diagram:1.5.0'
     // License plugin
-    classpath 'gradle.plugin.nl.javadude.gradle.plugins:license-gradle-plugin:0.13.1'
+    classpath 'gradle.plugin.nl.javadude.gradle.plugins:license-gradle-plugin:0.12.1'
     // Versions plugin
     classpath 'com.github.ben-manes:gradle-versions-plugin:0.12.0'
     // Stats plugin
     classpath 'org.kordamp.gradle:stats-gradle-plugin:0.2.0'
-    // Uses JApicmp to check binary compatibility with previous releases
-    classpath 'me.champeau.gradle:japicmp-gradle-plugin:0.2.6'
   }
 }
 
-apply plugin: 'base' // To add "clean" task to the root project.
+apply plugin: 'base'
 apply plugin: 'distribution'
-apply plugin: 'com.github.ben-manes.versions'
-apply plugin: 'opentcs-gradle-plugin'
 
 apply from: "${rootDir}/gradle/versioning.gradle"
 
-group = 'org.opentcs'
+group = 'de.fraunhofer.iml.opentcs.%GROUP_NAME%'
 
 subprojects {
   apply from: rootProject.file('gradle/common.gradle')
@@ -38,33 +34,25 @@ evaluationDependsOnChildren()
 distributions {
   main {
     contents.from {
-      project(':openTCS-Kernel').ext.collectableDistDir
+      project(':openTCS-%PROJECT_NAME%-Kernel').ext.collectableDistDir
     }
     contents.from {
-      project(':openTCS-KernelControlCenter').ext.collectableDistDir
+      project(':openTCS-%PROJECT_NAME%-KernelControlCenter').ext.collectableDistDir
     }
     contents.from {
-      project(':openTCS-PlantOverview').ext.collectableDistDir
+      project(':openTCS-%PROJECT_NAME%-PlantOverview').ext.collectableDistDir
     }
     contents.from {
-      project(':openTCS-Documentation').ext.collectableDistDir
+      project(':openTCS-%PROJECT_NAME%-Documentation').ext.collectableDistDir
     }
   }
 }
 
-task statsAggregate(type: org.kordamp.gradle.stats.AggregateStatsReportTask) {
-  dependsOn subprojects*.stats
-}
-
 task subDists {
-  dependsOn(':openTCS-Kernel:installDist')
-  dependsOn(':openTCS-KernelControlCenter:installDist')
-  dependsOn(':openTCS-PlantOverview:installDist')
-  dependsOn(':openTCS-Documentation:installDist')
-}
-
-task install {
-  dependsOn subprojects*.install
+  dependsOn(':openTCS-%PROJECT_NAME%-Kernel:installDist')
+  dependsOn(':openTCS-%PROJECT_NAME%-KernelControlCenter:installDist')
+  dependsOn(':openTCS-%PROJECT_NAME%-PlantOverview:installDist')
+  dependsOn(':openTCS-%PROJECT_NAME%-Documentation:installDist')
 }
 
 installDist.dependsOn subDists
@@ -84,9 +72,9 @@ task distSrcZip(type: Zip) {
   classifier = 'src'
   from "${rootDir}"
 
-  includes << 'buildSrc/**'
   includes << 'config/**'
   includes << 'gradle/**'
+  includes << 'lib/**'
   includes << 'openTCS-*/**'
   includes << 'src/**'
   includes << '.nb-gradle-properties'
@@ -94,14 +82,13 @@ task distSrcZip(type: Zip) {
   includes << 'gradlew'
   includes << 'gradlew.bat'
 
-  excludes << '.gitlab'
   excludes << '.gradle'
   excludes << '**/build'
-  excludes << 'buildSrc/.gradle'
 }
 
 artifacts {
   archives distZip
+  archives distTar
   archives distSrcZip
 }
 
@@ -110,13 +97,6 @@ build {
   dependsOn installDist
 }
 
-task release {
-  dependsOn build
-  dependsOn subprojects*.release
-  dependsOn distZip
-  dependsOn distSrcZip
-}
-
-task wrapper(type: Wrapper, description: 'Creates and deploys the Gradle wrapper to the current directory.') {
+task wrapper(type: Wrapper) {
   gradleVersion = '4.5'
 }
